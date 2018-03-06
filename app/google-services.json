@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "512872287353",
+    "firebase_url": "https://taplogger-cacb9.firebaseio.com",
+    "project_id": "taplogger-cacb9",
+    "storage_bucket": "taplogger-cacb9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:512872287353:android:6ad69b37ae0c1273",
+        "android_client_info": {
+          "package_name": "sahmed.dburkhart.com.taplogger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "512872287353-j517u4e20ui9qo8jin7dr8hd2ou2cspa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "sahmed.dburkhart.com.taplogger",
+            "certificate_hash": "e22db5a58a7eb7bc5d1bbccc9dfd7d3b191fd335"
+          }
+        },
+        {
+          "client_id": "512872287353-64kisqk09oaee495et10tgmj0h0jckf8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzBGe4MkXj4fK-0dUQHg7oWtRo_XHvwPM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "512872287353-64kisqk09oaee495et10tgmj0h0jckf8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
