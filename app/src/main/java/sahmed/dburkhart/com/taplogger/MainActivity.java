@@ -1,6 +1,8 @@
 package sahmed.dburkhart.com.taplogger;
 
+import android.Manifest.permission;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -10,6 +12,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -66,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
     private float[] lastGyroscopeValues = {0, 0, 0};
     private float[] lastAccelerometerValues = {0, 0, 0};
     private float[] lastRotationVectorValues = {0, 0, 0};
+
+    private final int FILE_CODE = 2222;
 
     private ArrayList<Button> buttonsArrayList = new ArrayList<>();
 
@@ -142,34 +148,45 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setUpFileOutput() {
-        String fileName = new SimpleDateFormat("yyyyMMddHHmm'_recording.csv'").format(new Date());
 
-        try {
-            this.file = new File(getApplicationContext().getApplicationInfo().dataDir, fileName);
-            this.fOut = new FileOutputStream(this.file);
-            this.writer = new OutputStreamWriter(this.fOut);
-            this.writer.append("timestamp, sensorName, " +
-                    "lastAccelerometerValues[0], lastAccelerometerValues[1], lastAccelerometerValues[2], " +
-                    "lastGyroscopeValues[0], lastGyroscopeValues[1], lastGyroscopeValues[2]," +
-                    " lastRotationVectorValues[0], lastRotationVectorValues[1], lastRotationVectorValues[2], " +
-                    "lastBtnId\n");
+        if (ContextCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{permission.READ_EXTERNAL_STORAGE, permission.WRITE_EXTERNAL_STORAGE},
+                    FILE_CODE);
+        } else {
 
-            this.mySensorManager.registerListener(this.mySensorListener,
-                    this.mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                    SensorManager.SENSOR_DELAY_GAME);
+            String fileName = new SimpleDateFormat("yyyyMMddHHmm'_recording.csv'").format(new Date());
 
-            this.mySensorManager.registerListener(this.mySensorListener,
-                    this.mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-                    SensorManager.SENSOR_DELAY_GAME);
+            try {
+
+                this.file = new File(getBaseContext().getExternalCacheDir().getAbsolutePath(), fileName);
 
 
-            this.mySensorManager.registerListener(this.mySensorListener,
-                    this.mySensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
-                    SensorManager.SENSOR_DELAY_GAME);
+                this.fOut = new FileOutputStream(this.file);
+                this.writer = new OutputStreamWriter(this.fOut);
+                this.writer.append("timestamp, sensorName, " +
+                        "lastAccelerometerValues[0], lastAccelerometerValues[1], lastAccelerometerValues[2], " +
+                        "lastGyroscopeValues[0], lastGyroscopeValues[1], lastGyroscopeValues[2]," +
+                        " lastRotationVectorValues[0], lastRotationVectorValues[1], lastRotationVectorValues[2], " +
+                        "lastBtnId\n");
+
+                this.mySensorManager.registerListener(this.mySensorListener,
+                        this.mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                        SensorManager.SENSOR_DELAY_GAME);
+
+                this.mySensorManager.registerListener(this.mySensorListener,
+                        this.mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                        SensorManager.SENSOR_DELAY_GAME);
 
 
-        } catch (IOException e) {
-            e.printStackTrace();
+                this.mySensorManager.registerListener(this.mySensorListener,
+                        this.mySensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
+                        SensorManager.SENSOR_DELAY_GAME);
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -202,7 +219,6 @@ public class MainActivity extends AppCompatActivity {
 
         Uri fileURI = Uri.fromFile(this.file);
         StorageReference childRef = this.mStorageRef.child(this.user.getUid()).child(this.uid);
-
         childRef.putFile(fileURI);
     }
 
@@ -275,27 +291,34 @@ public class MainActivity extends AppCompatActivity {
 
                 return false;
             }
-
         };
     }
 
     public void snapshot(String sensorName) {
-        try {
-            writer.append(String.valueOf(timestamp))
-                    .append(", ").append(sensorName)
-                    .append(", ").append(String.valueOf(lastAccelerometerValues[0]))
-                    .append(", ").append(String.valueOf(lastAccelerometerValues[1]))
-                    .append(", ").append(String.valueOf(lastAccelerometerValues[2]))
-                    .append(", ").append(String.valueOf(lastGyroscopeValues[0]))
-                    .append(", ").append(String.valueOf(lastGyroscopeValues[1]))
-                    .append(", ").append(String.valueOf(lastGyroscopeValues[2]))
-                    .append(", ").append(String.valueOf(lastRotationVectorValues[0]))
-                    .append(", ").append(String.valueOf(lastRotationVectorValues[1]))
-                    .append(", ").append(String.valueOf(lastRotationVectorValues[2]))
-                    .append(", ").append(String.valueOf(btnID)).append("\n");
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (ContextCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{permission.READ_EXTERNAL_STORAGE, permission.WRITE_EXTERNAL_STORAGE},
+                    FILE_CODE);
+        } else {
+
+            try {
+                writer.append(String.valueOf(timestamp))
+                        .append(", ").append(sensorName)
+                        .append(", ").append(String.valueOf(lastAccelerometerValues[0]))
+                        .append(", ").append(String.valueOf(lastAccelerometerValues[1]))
+                        .append(", ").append(String.valueOf(lastAccelerometerValues[2]))
+                        .append(", ").append(String.valueOf(lastGyroscopeValues[0]))
+                        .append(", ").append(String.valueOf(lastGyroscopeValues[1]))
+                        .append(", ").append(String.valueOf(lastGyroscopeValues[2]))
+                        .append(", ").append(String.valueOf(lastRotationVectorValues[0]))
+                        .append(", ").append(String.valueOf(lastRotationVectorValues[1]))
+                        .append(", ").append(String.valueOf(lastRotationVectorValues[2]))
+                        .append(", ").append(String.valueOf(btnID)).append("\n");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -510,6 +533,32 @@ public class MainActivity extends AppCompatActivity {
         this.buttonsArrayList.add(bt097);
         this.buttonsArrayList.add(bt098);
         this.buttonsArrayList.add(bt099);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+
+            case FILE_CODE:
+                if (checkFilePermission()) {
+                    // saveFile();
+                } else {
+                    Toast.makeText(this, "You don't have permission to access storage", Toast.LENGTH_LONG).show();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private boolean checkFilePermission() {
+        return ActivityCompat.checkSelfPermission
+                (this, permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission
+                (this, permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
 }
