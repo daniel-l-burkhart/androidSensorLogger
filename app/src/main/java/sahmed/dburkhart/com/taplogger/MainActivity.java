@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     DatabaseReference myDatabaseReference = database.getReference();
     private StorageReference mStorageRef;
     private FirebaseAuth firebaseAuth;
+    private FirebaseAuth mAuth;
     private FirebaseUser user;
     private DatabaseReference userIDReference;
 
@@ -77,54 +79,33 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mStorageRef = FirebaseStorage.getInstance().getReference();
-        firebaseAuth = FirebaseAuth.getInstance();
-        FirebaseApp app = FirebaseApp.initializeApp(this);
+        FirebaseApp app = FirebaseApp.getInstance();
+
+        this.mStorageRef = FirebaseStorage.getInstance().getReference();
         this.firebaseAuth = FirebaseAuth.getInstance(app);
-
-
-        firebaseAuth.signInAnonymously()
+        this.firebaseAuth.signInAnonymously()
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
-
+                        if (task.isSuccessful()) {
+                            Log.d("success", "Sign in successful");
+                            // Sign in success, update UI with the signed-in user's information
+                            //   Log.d("TAG", "signInAnonymously:success");
+                            user = firebaseAuth.getCurrentUser();
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.w("TAG", "signInAnonymously:failure", task.getException());
+                            Toast.makeText(MainActivity.this, "Authentication failed.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
 
                     }
                 });
 
-        if (this.firebaseAuth.getCurrentUser() == null) {
-            System.out.println("Null after anonymous");
+        if (this.firebaseAuth.getCurrentUser() != null) {
+            this.user = firebaseAuth.getCurrentUser();
+            this.userIDReference = this.myDatabaseReference.child(this.user.getUid());
         }
-
-        this.firebaseAuth.createUserWithEmailAndPassword("email@email.com", "password").
-                addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        Toast.makeText(MainActivity.this, "Already exists.",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-        if (this.firebaseAuth.getCurrentUser() == null) {
-            System.out.println("Null after create User");
-        }
-
-        firebaseAuth.signInWithEmailAndPassword("email@email.com", "password").addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-            @Override
-            public void onComplete(@NonNull Task<AuthResult> task) {
-                if (!task.isSuccessful())
-                    Toast.makeText(MainActivity.this, "Authentication failed.",
-                            Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        if (this.firebaseAuth.getCurrentUser() == null) {
-            System.out.println("Null after sign in user");
-        }
-
-
-        user = firebaseAuth.getCurrentUser();
-        userIDReference = myDatabaseReference.child(user.getUid());
 
         this.setUpSensors();
 
