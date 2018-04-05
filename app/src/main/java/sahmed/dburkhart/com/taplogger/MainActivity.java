@@ -10,6 +10,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -45,11 +46,10 @@ public class MainActivity extends AppCompatActivity {
     private int clicks[] = new int[100];
 
     //Firebase database stuff
-    FirebaseDatabase database = FirebaseDatabase.getInstance();
-    DatabaseReference myDatabaseReference = database.getReference();
+    private FirebaseDatabase database = FirebaseDatabase.getInstance();
+    private DatabaseReference myDatabaseReference = database.getReference();
     private StorageReference mStorageRef;
     private FirebaseAuth firebaseAuth;
-    private FirebaseAuth mAuth;
     private FirebaseUser user;
     private DatabaseReference userIDReference;
 
@@ -110,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (this.firebaseAuth.getCurrentUser() != null) {
             this.user = firebaseAuth.getCurrentUser();
+            System.out.println("UID: " + this.user.getUid());
             this.userIDReference = this.myDatabaseReference.child(this.user.getUid());
         }
 
@@ -159,7 +160,23 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
-                this.file = new File(getBaseContext().getExternalCacheDir().getAbsolutePath(), fileName);
+                System.out.println(this.isExternalStorageReadable() && this.isExternalStorageWritable());
+
+
+                if (this.isExternalStorageWritable() && this.isExternalStorageReadable()) {
+
+                    String root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
+
+                    System.out.println("ROOT: " + root);
+
+                    File newDir = new File(root + "/SensorReadings");
+                    boolean firstResult = newDir.mkdir();
+                    boolean result = newDir.mkdirs();
+
+                    System.out.println("MKDIR result: " + result);
+
+                    this.file = new File(newDir, fileName);
+                }
 
 
                 this.fOut = new FileOutputStream(this.file);
@@ -198,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setTouchListenerForButtons() {
         for (Button currButton : this.buttonsArrayList) {
-            currButton.setOnTouchListener(this.getOnTouchListener());
+            currButton.setOnTouchListener(this.getOnTouchListener(currButton));
         }
     }
 
@@ -228,18 +245,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 int i = v.getId() - buttonsArrayList.get(0).getId();
-                this.buttonClicked(i);
-                this.updateButton(v, i);
-            }
 
-            private void buttonClicked(int i) {
                 btnID = i;
                 clicks[i]++;
                 userIDReference.child("btn").child(Integer.toString(i));
                 userIDReference.child("clicks").child(Integer.toString(clicks[i]));
-            }
 
-            private void updateButton(View v, int i) {
                 switch (clicks[i]) {
                     case 1:
                         v.setBackgroundColor(Color.BLUE);
@@ -275,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
-    private View.OnTouchListener getOnTouchListener() {
+    private View.OnTouchListener getOnTouchListener(final Button currButton) {
 
         return new View.OnTouchListener() {
             @Override
@@ -283,7 +294,9 @@ public class MainActivity extends AppCompatActivity {
 
                 int i = v.getId() - buttonsArrayList.get(0).getId();
 
-                userIDReference.child(uid).child("btnID").child(Integer.toString(i))
+                int btnID = Integer.parseInt(currButton.getText().toString().trim());
+
+                userIDReference.child(uid).child("btnID").child(Integer.toString(btnID))
                         .child(Long.toString(SystemClock.uptimeMillis()))
                         .child(Integer.toString(clicks[i]))
                         .child(Integer.toString(event.getAction()))
@@ -541,9 +554,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
 
             case FILE_CODE:
-                if (checkFilePermission()) {
-                    // saveFile();
-                } else {
+                if (!checkFilePermission()) {
                     Toast.makeText(this, "You don't have permission to access storage", Toast.LENGTH_LONG).show();
                 }
                 break;
@@ -560,5 +571,19 @@ public class MainActivity extends AppCompatActivity {
                 (this, permission.WRITE_EXTERNAL_STORAGE)
                 == PackageManager.PERMISSION_GRANTED;
     }
+
+
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
+
+    /* Checks if external storage is available to at least read */
+    public boolean isExternalStorageReadable() {
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state) ||
+                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
+    }
+
 
 }
