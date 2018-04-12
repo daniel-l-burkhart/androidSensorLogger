@@ -85,42 +85,56 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        FirebaseApp app = FirebaseApp.getInstance();
+        this.getPermission();
 
+        FirebaseApp app = FirebaseApp.getInstance();
         this.mStorageRef = FirebaseStorage.getInstance().getReference();
         this.firebaseAuth = FirebaseAuth.getInstance(app);
-        this.firebaseAuth.signInAnonymously()
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            Log.d("success", "Sign in successful");
-                            // Sign in success, update UI with the signed-in user's information
-                            //   Log.d("TAG", "signInAnonymously:success");
-                            user = firebaseAuth.getCurrentUser();
-                        } else {
-                            // If sign in fails, display a message to the user.
-                            Log.w("TAG", "signInAnonymously:failure", task.getException());
-                            Toast.makeText(MainActivity.this, "Authentication failed.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
 
-                    }
-                });
+        if (this.firebaseAuth.getCurrentUser() != null) {
+            this.firebaseAuth.getCurrentUser().reload();
+        } else {
+
+            this.firebaseAuth.signInAnonymously()
+                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            if (task.isSuccessful()) {
+                                Log.d("success", "Sign in successful");
+                                // Sign in success, update UI with the signed-in user's information
+                                //   Log.d("TAG", "signInAnonymously:success");
+                                user = firebaseAuth.getCurrentUser();
+                            } else {
+                                // If sign in fails, display a message to the user.
+                                Log.w("TAG", "signInAnonymously:failure", task.getException());
+                                Toast.makeText(MainActivity.this, "Authentication failed.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+
+                        }
+                    });
+        }
 
         if (this.firebaseAuth.getCurrentUser() != null) {
             this.user = firebaseAuth.getCurrentUser();
             System.out.println("UID: " + this.user.getUid());
             this.userIDReference = this.myDatabaseReference.child(this.user.getUid());
+
+            this.setUpSensors();
+            this.setUpFileOutput();
+            this.setUpButtons();
+            this.setClickListenerForButtons();
+            this.setTouchListenerForButtons();
         }
 
-        this.setUpSensors();
+    }
 
-        this.setUpFileOutput();
-
-        this.setUpButtons();
-        this.setClickListenerForButtons();
-        this.setTouchListenerForButtons();
+    private void getPermission() {
+        if (ContextCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{permission.READ_EXTERNAL_STORAGE, permission.WRITE_EXTERNAL_STORAGE},
+                    FILE_CODE);
+        }
     }
 
 
@@ -176,31 +190,29 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("MKDIR result: " + result);
 
                     this.file = new File(newDir, fileName);
+
+                    this.fOut = new FileOutputStream(this.file);
+                    this.writer = new OutputStreamWriter(this.fOut);
+                    this.writer.append("timestamp, sensorName, " +
+                            "lastAccelerometerValues[0], lastAccelerometerValues[1], lastAccelerometerValues[2], " +
+                            "lastGyroscopeValues[0], lastGyroscopeValues[1], lastGyroscopeValues[2]," +
+                            " lastRotationVectorValues[0], lastRotationVectorValues[1], lastRotationVectorValues[2], " +
+                            "lastBtnId\n");
+
+                    this.mySensorManager.registerListener(this.mySensorListener,
+                            this.mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                            SensorManager.SENSOR_DELAY_GAME);
+
+                    this.mySensorManager.registerListener(this.mySensorListener,
+                            this.mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                            SensorManager.SENSOR_DELAY_GAME);
+
+
+                    this.mySensorManager.registerListener(this.mySensorListener,
+                            this.mySensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
+                            SensorManager.SENSOR_DELAY_GAME);
+
                 }
-
-
-                this.fOut = new FileOutputStream(this.file);
-                this.writer = new OutputStreamWriter(this.fOut);
-                this.writer.append("timestamp, sensorName, " +
-                        "lastAccelerometerValues[0], lastAccelerometerValues[1], lastAccelerometerValues[2], " +
-                        "lastGyroscopeValues[0], lastGyroscopeValues[1], lastGyroscopeValues[2]," +
-                        " lastRotationVectorValues[0], lastRotationVectorValues[1], lastRotationVectorValues[2], " +
-                        "lastBtnId\n");
-
-                this.mySensorManager.registerListener(this.mySensorListener,
-                        this.mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                        SensorManager.SENSOR_DELAY_GAME);
-
-                this.mySensorManager.registerListener(this.mySensorListener,
-                        this.mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-                        SensorManager.SENSOR_DELAY_GAME);
-
-
-                this.mySensorManager.registerListener(this.mySensorListener,
-                        this.mySensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
-                        SensorManager.SENSOR_DELAY_GAME);
-
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -248,7 +260,6 @@ public class MainActivity extends AppCompatActivity {
 
                 btnID = Integer.parseInt(currButton.getText().toString().trim());
 
-
                 clicks[i]++;
                 userIDReference.child("btn").child(Integer.toString(i));
                 userIDReference.child("clicks").child(Integer.toString(clicks[i]));
@@ -284,6 +295,8 @@ public class MainActivity extends AppCompatActivity {
                     case 10:
                         v.setVisibility(View.INVISIBLE);
                 }
+
+                Log.d("btnID", Integer.toString(btnID));
             }
         };
     }
@@ -303,6 +316,8 @@ public class MainActivity extends AppCompatActivity {
                         .child(Integer.toString(clicks[i]))
                         .child(Integer.toString(event.getAction()))
                         .setValue(event.toString());
+
+                Log.d("btnID", Integer.toString(btnID));
 
                 return false;
             }
