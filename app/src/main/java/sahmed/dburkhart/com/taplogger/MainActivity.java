@@ -209,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setClickListenerForButtons() {
         for (Button currButton : this.buttonsArrayList) {
-            currButton.setOnClickListener(this.getOnclickListener());
+            currButton.setOnClickListener(this.getOnclickListener(currButton));
         }
     }
 
@@ -239,14 +239,16 @@ public class MainActivity extends AppCompatActivity {
         childRef.putFile(fileURI);
     }
 
-    private View.OnClickListener getOnclickListener() {
+    private View.OnClickListener getOnclickListener(final Button currButton) {
 
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int i = v.getId() - buttonsArrayList.get(0).getId();
 
-                btnID = i;
+                btnID = Integer.parseInt(currButton.getText().toString().trim());
+
+
                 clicks[i]++;
                 userIDReference.child("btn").child(Integer.toString(i));
                 userIDReference.child("clicks").child(Integer.toString(clicks[i]));
@@ -294,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
 
                 int i = v.getId() - buttonsArrayList.get(0).getId();
 
-                int btnID = Integer.parseInt(currButton.getText().toString().trim());
+                btnID = Integer.parseInt(currButton.getText().toString().trim());
 
                 userIDReference.child(uid).child("btnID").child(Integer.toString(btnID))
                         .child(Long.toString(SystemClock.uptimeMillis()))
@@ -317,17 +319,17 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 writer.append(String.valueOf(timestamp))
-                        .append(", ").append(sensorName)
-                        .append(", ").append(String.valueOf(lastAccelerometerValues[0]))
-                        .append(", ").append(String.valueOf(lastAccelerometerValues[1]))
-                        .append(", ").append(String.valueOf(lastAccelerometerValues[2]))
-                        .append(", ").append(String.valueOf(lastGyroscopeValues[0]))
-                        .append(", ").append(String.valueOf(lastGyroscopeValues[1]))
-                        .append(", ").append(String.valueOf(lastGyroscopeValues[2]))
-                        .append(", ").append(String.valueOf(lastRotationVectorValues[0]))
-                        .append(", ").append(String.valueOf(lastRotationVectorValues[1]))
-                        .append(", ").append(String.valueOf(lastRotationVectorValues[2]))
-                        .append(", ").append(String.valueOf(btnID)).append("\n");
+                        .append(",").append(sensorName)
+                        .append(",").append(String.valueOf(lastAccelerometerValues[0]))
+                        .append(",").append(String.valueOf(lastAccelerometerValues[1]))
+                        .append(",").append(String.valueOf(lastAccelerometerValues[2]))
+                        .append(",").append(String.valueOf(lastGyroscopeValues[0]))
+                        .append(",").append(String.valueOf(lastGyroscopeValues[1]))
+                        .append(",").append(String.valueOf(lastGyroscopeValues[2]))
+                        .append(",").append(String.valueOf(lastRotationVectorValues[0]))
+                        .append(",").append(String.valueOf(lastRotationVectorValues[1]))
+                        .append(",").append(String.valueOf(lastRotationVectorValues[2]))
+                        .append(",").append(String.valueOf(btnID)).append("\n");
 
             } catch (IOException e) {
                 e.printStackTrace();
