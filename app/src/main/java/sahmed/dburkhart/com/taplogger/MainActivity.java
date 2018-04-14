@@ -193,10 +193,10 @@ public class MainActivity extends AppCompatActivity {
 
                     this.fOut = new FileOutputStream(this.file);
                     this.writer = new OutputStreamWriter(this.fOut);
-                    this.writer.append("timestamp, sensorName, " +
-                            "lastAccelerometerValues[0], lastAccelerometerValues[1], lastAccelerometerValues[2], " +
-                            "lastGyroscopeValues[0], lastGyroscopeValues[1], lastGyroscopeValues[2]," +
-                            " lastRotationVectorValues[0], lastRotationVectorValues[1], lastRotationVectorValues[2], " +
+                    this.writer.append("timestamp,sensorName," +
+                            "lastAccelerometerValues[0],lastAccelerometerValues[1],lastAccelerometerValues[2]," +
+                            "lastGyroscopeValues[0],lastGyroscopeValues[1],lastGyroscopeValues[2]," +
+                            "lastRotationVectorValues[0],lastRotationVectorValues[1],lastRotationVectorValues[2]," +
                             "lastBtnId\n");
 
                     this.mySensorManager.registerListener(this.mySensorListener,

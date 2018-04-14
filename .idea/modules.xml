@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/TapLogger.iml" filepath="$PROJECT_DIR$/TapLogger.iml" />
+      <module fileurl="file://C:\Users\Shakib\AndroidStudioProjects\tap-logging-wireless-sensor-networks\TapLogger.iml" filepath="C:\Users\Shakib\AndroidStudioProjects\tap-logging-wireless-sensor-networks\TapLogger.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/tap-logging-wireless-sensor-networks.iml" filepath="$PROJECT_DIR$/tap-logging-wireless-sensor-networks.iml" />
     </modules>
   </component>
 </project>
