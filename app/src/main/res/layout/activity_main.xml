@@ -785,6 +785,85 @@
                         android:text="99" />
                 </LinearLayout>
 
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/button100"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="100"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button101"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="101"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button102"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="102"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button103"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="103"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button104"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="104"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button105"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="105"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button106"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="106"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button107"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="107"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/button108"
+                        android:layout_width="30dp"
+                        android:layout_height="35dp"
+                        android:layout_weight="1"
+                        android:text="108"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
             </LinearLayout>
 
         </FrameLayout>
