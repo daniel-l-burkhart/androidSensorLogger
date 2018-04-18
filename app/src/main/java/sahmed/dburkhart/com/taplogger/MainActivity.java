@@ -24,7 +24,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -41,15 +40,18 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+/**
+ * Main Activity class that contains experiment
+ */
 public class MainActivity extends AppCompatActivity {
 
-    private int clicks[] = new int[110];
+    private int btnClicks[] = new int[110];
 
-    //Firebase database stuff
+    //Firebase stuff
     private FirebaseDatabase database = FirebaseDatabase.getInstance();
     private DatabaseReference myDatabaseReference = database.getReference();
-    private StorageReference mStorageRef;
-    private FirebaseAuth firebaseAuth;
+    private StorageReference myStorageReference = FirebaseStorage.getInstance().getReference();
+    private FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
     private FirebaseUser user;
     private DatabaseReference userIDReference;
 
@@ -73,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
 
     private final int FILE_CODE = 2222;
 
-    private ArrayList<Button> buttonsArrayList = new ArrayList<>();
+    private ArrayList<Button> buttonsArrayList = new ArrayList<Button>();
 
     @Override
     public void onStart() {
@@ -85,15 +87,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        this.getPermission();
-
-        FirebaseApp app = FirebaseApp.getInstance();
-        this.mStorageRef = FirebaseStorage.getInstance().getReference();
-        this.firebaseAuth = FirebaseAuth.getInstance(app);
-
-        if (this.firebaseAuth.getCurrentUser() != null) {
-            this.firebaseAuth.getCurrentUser().reload();
-        } else {
+        if (this.firebaseAuth.getCurrentUser() == null) {
 
             this.firebaseAuth.signInAnonymously()
                     .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
@@ -101,34 +95,37 @@ public class MainActivity extends AppCompatActivity {
                         public void onComplete(@NonNull Task<AuthResult> task) {
                             if (task.isSuccessful()) {
                                 Log.d("success", "Sign in successful");
-                                // Sign in success, update UI with the signed-in user's information
-                                //   Log.d("TAG", "signInAnonymously:success");
                                 user = firebaseAuth.getCurrentUser();
                             } else {
-                                // If sign in fails, display a message to the user.
                                 Log.w("TAG", "signInAnonymously:failure", task.getException());
                                 Toast.makeText(MainActivity.this, "Authentication failed.",
                                         Toast.LENGTH_SHORT).show();
                             }
-
                         }
                     });
+        } else {
+            this.firebaseAuth.getCurrentUser().reload();
         }
 
         if (this.firebaseAuth.getCurrentUser() != null) {
             this.user = firebaseAuth.getCurrentUser();
-            System.out.println("UID: " + this.user.getUid());
             this.userIDReference = this.myDatabaseReference.child(this.user.getUid());
-
-            this.setUpSensors();
-            this.setUpFileOutput();
-            this.setUpButtons();
-            this.setClickListenerForButtons();
-            this.setTouchListenerForButtons();
         }
 
+        if (this.permissionNotGranted()) {
+            this.getPermission();
+        }
+
+        this.setUpSensors();
+        this.setUpButtons();
+        this.setClickListenerForButtons();
+        this.setTouchListenerForButtons();
+        this.setUpFileOutput();
     }
 
+    /**
+     * Checks permissions to read and write to external storage and requests them if not granted already
+     */
     private void getPermission() {
         if (ContextCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -138,6 +135,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * Sets up the sensors used in this project with sensor managers and sensor listeners
+     */
     private void setUpSensors() {
         this.mySensorManager = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
 
@@ -157,11 +157,26 @@ public class MainActivity extends AppCompatActivity {
                     lastRotationVectorValues = event.values;
                 }
                 timestamp = SystemClock.uptimeMillis();
-                snapshot(sensor.getName());
+                capture(sensor.getName());
             }
         };
+
+        this.mySensorManager.registerListener(this.mySensorListener,
+                this.mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                SensorManager.SENSOR_DELAY_GAME);
+
+        this.mySensorManager.registerListener(this.mySensorListener,
+                this.mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                SensorManager.SENSOR_DELAY_GAME);
+
+        this.mySensorManager.registerListener(this.mySensorListener,
+                this.mySensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
+                SensorManager.SENSOR_DELAY_GAME);
     }
 
+    /**
+     * Sets up the output file and registers the sensors
+     */
     private void setUpFileOutput() {
 
         if (ContextCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -174,23 +189,13 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
-                System.out.println(this.isExternalStorageReadable() && this.isExternalStorageWritable());
-
-
-                if (this.isExternalStorageWritable() && this.isExternalStorageReadable()) {
+                if (this.isExternalStorageReadable() && this.isExternalStorageWritable()) {
 
                     String root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
-
-                    System.out.println("ROOT: " + root);
-
                     File newDir = new File(root + "/SensorReadings");
-                    boolean firstResult = newDir.mkdir();
                     boolean result = newDir.mkdirs();
 
-                    System.out.println("MKDIR result: " + result);
-
                     this.file = new File(newDir, fileName);
-
                     this.fOut = new FileOutputStream(this.file);
                     this.writer = new OutputStreamWriter(this.fOut);
                     this.writer.append("timestamp,sensorName," +
@@ -199,19 +204,6 @@ public class MainActivity extends AppCompatActivity {
                             "lastRotationVectorValues[0],lastRotationVectorValues[1],lastRotationVectorValues[2]," +
                             "lastBtnId\n");
 
-                    this.mySensorManager.registerListener(this.mySensorListener,
-                            this.mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                            SensorManager.SENSOR_DELAY_GAME);
-
-                    this.mySensorManager.registerListener(this.mySensorListener,
-                            this.mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
-                            SensorManager.SENSOR_DELAY_GAME);
-
-
-                    this.mySensorManager.registerListener(this.mySensorListener,
-                            this.mySensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
-                            SensorManager.SENSOR_DELAY_GAME);
-
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -219,12 +211,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Sets the onClick listener for the 108 buttons
+     */
     private void setClickListenerForButtons() {
         for (Button currButton : this.buttonsArrayList) {
             currButton.setOnClickListener(this.getOnclickListener(currButton));
         }
     }
 
+    /**
+     * Sets the onTouch listener for the 108 buttons
+     */
     private void setTouchListenerForButtons() {
         for (Button currButton : this.buttonsArrayList) {
             currButton.setOnTouchListener(this.getOnTouchListener(currButton));
@@ -235,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
 
-        if(this.mySensorListener!= null) {
+        if (this.mySensorListener != null) {
             this.mySensorManager.unregisterListener(this.mySensorListener);
         }
 
@@ -248,112 +246,142 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        Uri fileURI = Uri.fromFile(this.file);
-        StorageReference childRef = this.mStorageRef.child(this.user.getUid()).child(this.uid);
-        childRef.putFile(fileURI);
+        if (this.file != null && this.user != null && this.uid != null) {
+            this.myStorageReference.child(this.user.getUid()).child(this.uid).putFile(Uri.fromFile(this.file));
+        }
     }
 
+    /**
+     * Creates onClick Listener for button
+     *
+     * @param currButton The current button
+     * @return An onClick Listener event to be used by the button during this experiment
+     */
     private View.OnClickListener getOnclickListener(final Button currButton) {
 
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int i = v.getId() - buttonsArrayList.get(0).getId();
-
+                int btnViewID = v.getId() - buttonsArrayList.get(0).getId();
                 btnID = Integer.parseInt(currButton.getText().toString().trim());
+                btnClicks[btnViewID]++;
 
-                clicks[i]++;
-                userIDReference.child("btn").child(Integer.toString(i));
-                userIDReference.child("clicks").child(Integer.toString(clicks[i]));
-
-                switch (clicks[i]) {
-                    case 1:
-                        v.setBackgroundColor(Color.BLUE);
-                        break;
-                    case 2:
-                        v.setBackgroundColor(Color.YELLOW);
-                        break;
-                    case 3:
-                        v.setBackgroundColor(Color.GREEN);
-                        break;
-                    case 4:
-                        v.setBackgroundColor(Color.RED);
-                        break;
-                    case 5:
-                        v.setBackgroundColor(Color.CYAN);
-                        break;
-                    case 6:
-                        v.setBackgroundColor(Color.LTGRAY);
-                        break;
-                    case 7:
-                        v.setBackgroundColor(Color.MAGENTA);
-                        break;
-                    case 8:
-                        v.setBackgroundColor(Color.DKGRAY);
-                        break;
-                    case 9:
-                        v.setBackgroundColor(Color.WHITE);
-                        break;
-                    case 10:
-                        v.setVisibility(View.INVISIBLE);
+                if (userIDReference != null) {
+                    userIDReference.child("btn").child(Integer.toString(btnViewID));
+                    userIDReference.child("btnClicks").child(Integer.toString(btnClicks[btnViewID]));
                 }
 
+                switch (btnClicks[btnViewID]) {
+                    case 1: {
+                        v.setBackgroundColor(Color.BLUE);
+                        break;
+                    }
+                    case 2: {
+                        v.setBackgroundColor(Color.YELLOW);
+                        break;
+                    }
+                    case 3: {
+                        v.setBackgroundColor(Color.GREEN);
+                        break;
+                    }
+                    case 4: {
+                        v.setBackgroundColor(Color.RED);
+                        break;
+                    }
+                    case 5: {
+                        v.setBackgroundColor(Color.CYAN);
+                        break;
+                    }
+                    case 6: {
+                        v.setBackgroundColor(Color.LTGRAY);
+                        break;
+                    }
+                    case 7: {
+                        v.setBackgroundColor(Color.MAGENTA);
+                        break;
+                    }
+                    case 8: {
+                        v.setBackgroundColor(Color.DKGRAY);
+                        break;
+                    }
+                    case 9: {
+                        v.setBackgroundColor(Color.WHITE);
+                        break;
+                    }
+                    case 10: {
+                        v.setVisibility(View.INVISIBLE);
+                        break;
+                    }
+                }
                 Log.d("btnID", Integer.toString(btnID));
             }
         };
     }
 
+    /**
+     * Creates onTouch Listener for button
+     *
+     * @param currButton The current button
+     * @return An onTouch Listener event to be used by the button during this experiment
+     */
     private View.OnTouchListener getOnTouchListener(final Button currButton) {
 
         return new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
 
-                int i = v.getId() - buttonsArrayList.get(0).getId();
+                int btnViewID = v.getId() - buttonsArrayList.get(0).getId();
 
                 btnID = Integer.parseInt(currButton.getText().toString().trim());
 
-                userIDReference.child(uid).child("btnID").child(Integer.toString(btnID))
-                        .child(Long.toString(SystemClock.uptimeMillis()))
-                        .child(Integer.toString(clicks[i]))
-                        .child(Integer.toString(event.getAction()))
-                        .setValue(event.toString());
+                if (userIDReference != null) {
+                    userIDReference.child(uid).child("btnID").child(Integer.toString(btnID))
+                            .child(Long.toString(SystemClock.uptimeMillis()))
+                            .child(Integer.toString(btnClicks[btnViewID]))
+                            .child(Integer.toString(event.getAction()))
+                            .setValue(event.toString());
+                }
 
                 Log.d("btnID", Integer.toString(btnID));
-
                 return false;
             }
         };
     }
 
-    public void snapshot(String sensorName) {
+    /**
+     * Captures the current sensor state and writes it to the file
+     *
+     * @param sensorName The Name of the sensor.
+     */
+    public void capture(String sensorName) {
 
         if (ContextCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{permission.READ_EXTERNAL_STORAGE, permission.WRITE_EXTERNAL_STORAGE},
                     FILE_CODE);
         } else {
-
             try {
-                writer.append(String.valueOf(timestamp))
+                writer.append(String.valueOf(this.timestamp))
                         .append(",").append(sensorName)
-                        .append(",").append(String.valueOf(lastAccelerometerValues[0]))
-                        .append(",").append(String.valueOf(lastAccelerometerValues[1]))
-                        .append(",").append(String.valueOf(lastAccelerometerValues[2]))
-                        .append(",").append(String.valueOf(lastGyroscopeValues[0]))
-                        .append(",").append(String.valueOf(lastGyroscopeValues[1]))
-                        .append(",").append(String.valueOf(lastGyroscopeValues[2]))
-                        .append(",").append(String.valueOf(lastRotationVectorValues[0]))
-                        .append(",").append(String.valueOf(lastRotationVectorValues[1]))
-                        .append(",").append(String.valueOf(lastRotationVectorValues[2]))
-                        .append(",").append(String.valueOf(btnID)).append("\n");
-
+                        .append(",").append(String.valueOf(this.lastAccelerometerValues[0]))
+                        .append(",").append(String.valueOf(this.lastAccelerometerValues[1]))
+                        .append(",").append(String.valueOf(this.lastAccelerometerValues[2]))
+                        .append(",").append(String.valueOf(this.lastGyroscopeValues[0]))
+                        .append(",").append(String.valueOf(this.lastGyroscopeValues[1]))
+                        .append(",").append(String.valueOf(this.lastGyroscopeValues[2]))
+                        .append(",").append(String.valueOf(this.lastRotationVectorValues[0]))
+                        .append(",").append(String.valueOf(this.lastRotationVectorValues[1]))
+                        .append(",").append(String.valueOf(this.lastRotationVectorValues[2]))
+                        .append(",").append(String.valueOf(this.btnID)).append("\n");
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    /**
+     * Sets up all the buttons from the view, and adds them to an arraylist for iteration
+     */
     private void setUpButtons() {
         final Button btn1 = findViewById(R.id.button1);
         Button btn2 = findViewById(R.id.button2);
@@ -600,37 +628,52 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
 
-            case FILE_CODE:
-                if (!checkFilePermission()) {
-                    Toast.makeText(this, "You don't have permission to access storage", Toast.LENGTH_LONG).show();
+            case FILE_CODE: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    return;
+                } else if (permissionNotGranted()) {
+                    Log.d("ACCESS", "You don't have permission to access storage");
+                    System.exit(0);
                 }
+                return;
+            }
+
+            default: {
                 break;
-            default:
-                break;
+            }
         }
     }
 
-    private boolean checkFilePermission() {
-        return ActivityCompat.checkSelfPermission
-                (this, permission.READ_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission
-                (this, permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED;
+    /**
+     * Checks files permissions
+     *
+     * @return True if permissions have been granted, false otherwise
+     */
+    private boolean permissionNotGranted() {
+        return (ActivityCompat.checkSelfPermission(this, permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+                && (ActivityCompat.checkSelfPermission(this, permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED);
     }
 
 
+    /**
+     * Checks if external storage is writable
+     *
+     * @return True if media is writeable, false otherwise
+     */
     public boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
         return Environment.MEDIA_MOUNTED.equals(state);
     }
 
-    /* Checks if external storage is available to at least read */
+    /**
+     * Checks if external storage is readable
+     *
+     * @return True if media is read only or Read/write, false otherwise
+     */
     public boolean isExternalStorageReadable() {
         String state = Environment.getExternalStorageState();
         return Environment.MEDIA_MOUNTED.equals(state) ||
                 Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
     }
-
 
 }
